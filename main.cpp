@@ -4,10 +4,44 @@
 #include <utility>
 #include <fstream>
 #include <cstdlib>
-#include <exception>
+#include <exception> //TODO-used? check.
+#include <ctime>
 
+//TODO_ANKI - pow(), random stuff, <utility>'s std::get<0>(vectorObject), more cin and file stuff...
+
+class Word {
+  std::string m_nativeLanguage;
+  std::string m_targetLanguage;
+  int m_secondsToWaitBeforeReview;
+  std::time_t m_lastSeen;
+public: //TODO-these shouldnt be inline so move them out of here?
+  Word(std::string nativeLanguage, std::string targetLanguage) : m_nativeLanguage(nativeLanguage), m_targetLanguage(targetLanguage), m_secondsToWaitBeforeReview(0), m_lastSeen(std::time(nullptr)) {}
+  
+  void updateSecondsToWait() {
+    m_secondsToWaitBeforeReview = m_secondsToWaitBeforeReview == 0 ? 1 : (2 * m_secondsToWaitBeforeReview);
+  }
+  void updateSeenTime() {
+    m_lastSeen = std::time(nullptr);
+    std::cout<< " NEW SEEN TIME " << m_lastSeen << std::endl;//TODO-REMOVVE
+  }
+
+  std::string getNativeLanguage() {
+    return m_nativeLanguage;
+  }
+  std::string getTargetLanguage() {
+    return m_targetLanguage;
+  }
+  int getSecondsToWait() {
+    return m_secondsToWaitBeforeReview;
+  }
+  std::time_t getSeenTime() {
+    return m_lastSeen;
+  }
+};
+  
 // http://www.cplusplus.com/reference/cstdlib/rand/
-std::pair<std::string, std::string> split(const std::string &text, char sep) { // modified from http://stackoverflow.com/questions/236129/split-a-string-in-c
+  
+Word* split(const std::string &text, char sep) { // modified from http://stackoverflow.com/questions/236129/split-a-string-in-c
   std::vector<std::string> tokens;
   std::size_t start = 0, end = 0;
   while ((end = text.find(sep, start)) != std::string::npos) {
@@ -18,7 +52,7 @@ std::pair<std::string, std::string> split(const std::string &text, char sep) { /
   if (tokens.size() != 2) {
     throw "Two words on a line expected.";
   }
-  return std::pair<std::string, std::string>(tokens[0], tokens[1]);
+  return new Word(tokens[0], tokens[1]);
 }
 /*
 // TODO - rethink the splitting by char.  we want to be able to work with expressions too.  so probably CSV files would be better and still quick/user friendly to create.
@@ -31,8 +65,8 @@ std::pair<std::string, std::string> split(const std::string &text, char sep) { /
 int main() {
   std::ifstream file;
   std::string line;
-  std::vector<std::pair<std::string, std::string>> allWords;
-  std::pair<std::string, std::string> pairOfWords;
+  std::vector<Word*> allWords;
+  Word* word;
   int randInt;
   char sep = ' ';
   char c;
@@ -41,14 +75,21 @@ int main() {
 
   file.open("words2.txt");
   while(getline(file, line)) {
-    pairOfWords = split(line, sep);
-    allWords.push_back(pairOfWords);
+    word = split(line, sep);
+    allWords.push_back(word);
   }
   file.close();
 
   while (true) {
     randInt = (rand() % allWords.size());
-    std::cout << std::get<0>(allWords[randInt]) << " " << std::get<1>(allWords[randInt]) << std::endl;
+
+    std::cout << ((std::time(nullptr) - allWords[randInt]->getSeenTime()) >= allWords[randInt]->getSecondsToWait()) << std::endl;//TODO-REMOVE
+      
+    std::cout << allWords[randInt]->getNativeLanguage() << " " << allWords[randInt]->getTargetLanguage() << std::endl;
     std::cin >> c;
+
+    allWords[randInt]->updateSeenTime();
+    allWords[randInt]->updateSecondsToWait();
   }
+  //TODO-explicitly delete all word pointers.
 }
