@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <exception> //TODO-used? check.
 #include <ctime>
+#include <unistd.h>
 
 //TODO_ANKI - pow(), random stuff, <utility>'s std::get<0>(vectorObject), more cin and file stuff...
 
@@ -20,9 +21,11 @@ public: //TODO-these shouldnt be inline so move them out of here?
   void updateSecondsToWait() {
     m_secondsToWaitBeforeReview = m_secondsToWaitBeforeReview == 0 ? 1 : (2 * m_secondsToWaitBeforeReview);
   }
+  void resetSecondsToWait() {
+    m_secondsToWaitBeforeReview = 1;
+  }
   void updateSeenTime() {
     m_lastSeen = std::time(nullptr);
-    std::cout<< " NEW SEEN TIME " << m_lastSeen << std::endl;//TODO-REMOVVE
   }
 
   std::string getNativeLanguage() {
@@ -36,6 +39,9 @@ public: //TODO-these shouldnt be inline so move them out of here?
   }
   std::time_t getSeenTime() {
     return m_lastSeen;
+  }
+  bool canBeDisplayed() {
+    return (std::time(nullptr) - getSeenTime()) >= getSecondsToWait();
   }
 };
   
@@ -67,7 +73,7 @@ int main() {
   std::string line;
   std::vector<Word*> allWords;
   Word* word;
-  int randInt;
+  //int randInt;//TODO-reintroduce randomness
   char sep = ' ';
   char c;
 
@@ -80,6 +86,7 @@ int main() {
   }
   file.close();
 
+  /*
   while (true) {
     randInt = (rand() % allWords.size());
 
@@ -91,5 +98,30 @@ int main() {
     allWords[randInt]->updateSeenTime();
     allWords[randInt]->updateSecondsToWait();
   }
+  */
+  while (true) {
+    for (Word* word : allWords) {
+      if (word->canBeDisplayed()) {
+	std::cout << word->getNativeLanguage() << std::endl;
+	sleep(1);
+	std::cout << word->getTargetLanguage() << std::endl;
+	std::cin >> c;
+	if (c == '0') {
+	  word->updateSeenTime();
+	  word->resetSecondsToWait();
+
+	}
+	else if (c == '1') {
+	  word->updateSeenTime();
+	  word->updateSecondsToWait();
+	}
+	else {
+	  throw "Should have entered 0 or 1.";
+	}
+	std::cout << std::endl;
+      }
+    }
+  }
+
   //TODO-explicitly delete all word pointers.
 }
