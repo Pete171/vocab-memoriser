@@ -26,7 +26,7 @@ question_word2 answer_word2
 * If a word is ever wrong (the user entered 0) the ready for review' time is reset to 1 and the time begins again increasing multiplicatively.
 * If no words are ready for review then text is shown to distract the user from the words they were reviewing.  It is suggested this is text from the target language the user is trying to learn.  Just populate `distraction.txt` with whatever you want.
 * An eample `words.txt` and `distraction.txt` have been provided with the source so this can be instantly run.
-
+* Can run with a param '1' or '0'.  1 will reverse the order of the words so that the native language is shown as the question and the target language is the answer.  0 is the default.
 ## To compile:
 
 1.  Checkout this repository into a directory on your local machine.

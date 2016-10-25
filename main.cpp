@@ -9,6 +9,7 @@
 
 // TODO - words.txt is a bad format.  CSV would be better.
 // TODO - make filenames/sleep time configurable - i.e. ini file.
+// TODO - keep track of words that have 'finished' past a max number of iterations and exit if all words are 'finished'.  if we timeout keep track of the words that were still failing and print them for further study.
 
 class Word {
   std::string m_nativeLanguage;
@@ -24,7 +25,7 @@ public:
   {}
   
   void updateSecondsToWait() {
-    m_secondsToWaitBeforeReview = m_secondsToWaitBeforeReview == 0 ? 1 : (2 * m_secondsToWaitBeforeReview);
+    m_secondsToWaitBeforeReview = m_secondsToWaitBeforeReview == 0 ? 1 : (3 * m_secondsToWaitBeforeReview);
   }
   
   void resetSecondsToWait() {
@@ -56,7 +57,7 @@ public:
   }
 };
   
-Word* split(const std::string &text, char sep) { // modified from http://stackoverflow.com/questions/236129/split-a-string-in-c
+Word* split(const std::string &text, char sep, bool reverse) { // modified from http://stackoverflow.com/questions/236129/split-a-string-in-c
   std::vector<std::string> tokens;
   std::size_t start = 0, end = 0;
   while ((end = text.find(sep, start)) != std::string::npos) {
@@ -67,7 +68,12 @@ Word* split(const std::string &text, char sep) { // modified from http://stackov
   if (tokens.size() != 2) {
     throw "Two words on a line expected.";
   }
-  return new Word(tokens[0], tokens[1]);
+  if (!reverse) {
+    return new Word(tokens[0], tokens[1]);
+  }
+  else {
+    return new Word(tokens[1], tokens[0]);
+  }
 }
 
 void clearScreen() {
@@ -92,17 +98,22 @@ void handleWord(Word* word) {
   }
 }
 
-int main() {
+static int TIMEOUT = 5 * 60;
+
+int main(int argc, char** argv) {
+  bool reverse = argc > 1 && atoi(argv[1]) != 0;
   std::ifstream file;
   std::string line;
   std::vector<Word*> allWords;
   Word* word;
   char sep = ' ';
   bool outputDistraction;
-
+  std::time_t startTime = std::time(nullptr);
+  std::time_t currentTime;
+  
   file.open("words.txt");
   while(getline(file, line)) {
-    word = split(line, sep);
+    word = split(line, sep, reverse);
     allWords.push_back(word);
   }
   file.close();
@@ -116,6 +127,12 @@ int main() {
   std::vector<Word*> randomWords;
   
   while (true) {
+    currentTime = std::time(nullptr);
+    if ((currentTime - startTime) >= TIMEOUT) {
+      std::cout << "Timeout" << std::endl;
+      exit(0);
+    }
+    
     for (Word* word : allWords) {
       if (word->canBeDisplayed()) {
 	randomWords.push_back(word);
