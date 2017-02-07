@@ -1,6 +1,4 @@
-Buchstaben letters
-flackern to_flicker
-Wunde a_wound
-ducken to_duck
-bedecken to_cover
-Passanten passer_by
+a,b
+c,d
+e,f
+g,h

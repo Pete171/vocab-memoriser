@@ -7,6 +7,8 @@
 #include <unistd.h>
 #include <algorithm>
 
+#include "csv_reader.h"
+
 // TODO - words.txt is a bad format.  CSV would be better.
 // TODO - make filenames/sleep time configurable - i.e. ini file.
 // TODO - keep track of words that have 'finished' past a max number of iterations and exit if all words are 'finished'.  if we timeout keep track of the words that were still failing and print them for further study.
@@ -106,18 +108,27 @@ int main(int argc, char** argv) {
   std::string line;
   std::vector<Word*> allWords;
   Word* word;
-  char sep = ' ';
   bool outputDistraction;
   std::time_t startTime = std::time(nullptr);
   std::time_t currentTime;
+  CsvReader csvReader;
+  int sleepSeconds;
   
-  file.open("words.txt");
-  while(getline(file, line)) {
-    word = split(line, sep, reverse);
-    allWords.push_back(word);
+  std::list<std::list<std::string>> rows = csvReader.parse("words.txt");
+  
+  for (auto row : rows) {
+    if (row.size() != 2) {
+      throw "Invalid size.";//TODO-improve
+    }
+    if (reverse) {
+      allWords.push_back(new Word(row.back(), row.front()));
+    }
+    else {
+      allWords.push_back(new Word(row.front(), row.back()));
+    }
   }
-  file.close();
-
+  
+  
   file.open("distraction.txt");
   std::string distractionText(
     (std::istreambuf_iterator<char>(file)),
@@ -147,6 +158,7 @@ int main(int argc, char** argv) {
       }
     }
     else {
+      //TODO-a small 0.1s sleep might be good here to give you time to look back to the top when its about to go back from the distraction
       std::random_shuffle ( randomWords.begin(), randomWords.end() );
 
       while (randomWords.size() > 0) {
@@ -158,7 +170,18 @@ int main(int argc, char** argv) {
 	randomWords.pop_back();
 	
 	std::cout << word->getNativeLanguage() << std::endl;
-	sleep(1);
+
+	if (word->getSecondsToWait() == 1) {
+	  sleepSeconds = 3;
+	}
+	else if (word->getSecondsToWait() == 3) {
+	  sleepSeconds = 2;
+	}
+	else {
+	  sleepSeconds = 1;
+	}
+	
+	sleep(sleepSeconds);
 	std::cout << word->getTargetLanguage() << std::endl;
 	handleWord(word);
 	std::cout << std::endl;
